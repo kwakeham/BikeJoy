@@ -132,7 +132,7 @@
 #endif
 
 #define MOVEMENT_SPEED                  5                                           /**< Number of pixels by which the cursor is moved each time a button is pushed. */
-#define INPUT_REPORT_COUNT              3                                           /**< Number of input reports in this application. */
+#define INPUT_REPORT_COUNT              2                                           /**< Number of input reports in this application. */
 #define INPUT_REP_BUTTONS_LEN           3                                           /**< Length of Mouse Input Report containing button data. */
 #define INPUT_REP_MOVEMENT_LEN          3                                           /**< Length of Mouse Input Report containing movement data. */
 #define INPUT_REP_MEDIA_PLAYER_LEN      1                                           /**< Length of Mouse Input Report containing media player data. */
@@ -539,82 +539,42 @@ static void hids_init(void)
     static ble_hids_inp_rep_init_t inp_rep_array[INPUT_REPORT_COUNT];
     static uint8_t rep_map_data[] =
     {
-        0x05, 0x01, // Usage Page (Generic Desktop)
-        0x09, 0x02, // Usage (Mouse)
+        0x05, 0x01,       // Usage Page (Generic Desktop)
+        0x09, 0x04,       // USAGE (Joystick)
 
         0xA1, 0x01, // Collection (Application)
 
-        // Report ID 1: Mouse buttons + scroll/pan
-        0x85, 0x01,       // Report Id 1
-        0x09, 0x01,       // Usage (Pointer)
-        0xA1, 0x00,       // Collection (Physical)
-        0x95, 0x05,       // Report Count (3)
-        0x75, 0x01,       // Report Size (1)
-        0x05, 0x09,       // Usage Page (Buttons)
-        0x19, 0x01,       // Usage Minimum (01)
-        0x29, 0x05,       // Usage Maximum (05)
-        0x15, 0x00,       // Logical Minimum (0)
-        0x25, 0x01,       // Logical Maximum (1)
-        0x81, 0x02,       // Input (Data, Variable, Absolute)
-        0x95, 0x01,       // Report Count (1)
-        0x75, 0x03,       // Report Size (3)
-        0x81, 0x01,       // Input (Constant) for padding
-        0x75, 0x08,       // Report Size (8)
-        0x95, 0x01,       // Report Count (1)
-        0x05, 0x01,       // Usage Page (Generic Desktop)
-        0x09, 0x38,       // Usage (Wheel)
-        0x15, 0x81,       // Logical Minimum (-127)
-        0x25, 0x7F,       // Logical Maximum (127)
-        0x81, 0x06,       // Input (Data, Variable, Relative)
-        0x05, 0x0C,       // Usage Page (Consumer)
-        0x0A, 0x38, 0x02, // Usage (AC Pan)
-        0x95, 0x01,       // Report Count (1)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-        0xC0,             // End Collection (Physical)
+        // Report ID 1:
+        0x85, 0x01,                    //  REPORT_ID (1)
+        0xa1, 0x02,                    //    COLLECTION (Logical)
+        0x09, 0x32,                    //    USAGE (Z)
+        0x09, 0x31,                    //    USAGE (Y)
+        0x09, 0x30,                    //    USAGE (X)
+        0x15, 0x00,                    //    LOGICAL_MINIMUM (0)
+        0x26, 0xff, 0x00,              //    LOGICAL_MAXIMUM (255)
+        0x35, 0x00,                    //    PHYSICAL_MINIMUM (0)
+        0x46, 0xff, 0x00,              //    PHYSICAL_MAXIMUM (255)
+        0x75, 0x08,                    //    REPORT_SIZE (8)
+        0x95, 0x03,                    //    REPORT_COUNT (3)
+        0x81, 0x02,                    //    INPUT (Data,Var,Abs)
+        0xc0,                          //  END_COLLECTION
 
-        // Report ID 2: Mouse motion
-        0x85, 0x02,       // Report Id 2
-        0x09, 0x01,       // Usage (Pointer)
-        0xA1, 0x00,       // Collection (Physical)
-        0x75, 0x0C,       // Report Size (12)
-        0x95, 0x02,       // Report Count (2)
-        0x05, 0x01,       // Usage Page (Generic Desktop)
-        0x09, 0x30,       // Usage (X)
-        0x09, 0x31,       // Usage (Y)
-        0x16, 0x01, 0xF8, // Logical maximum (2047)
-        0x26, 0xFF, 0x07, // Logical minimum (-2047)
-        0x81, 0x06,       // Input (Data, Variable, Relative)
-        0xC0,             // End Collection (Physical)
-        0xC0,             // End Collection (Application)
-
-        // Report ID 3: Advanced buttons
-        0x05, 0x0C,       // Usage Page (Consumer)
-        0x09, 0x01,       // Usage (Consumer Control)
-        0xA1, 0x01,       // Collection (Application)
-        0x85, 0x03,       // Report Id (3)
-        0x15, 0x00,       // Logical minimum (0)
-        0x25, 0x01,       // Logical maximum (1)
-        0x75, 0x01,       // Report Size (1)
-        0x95, 0x01,       // Report Count (1)
-
-        0x09, 0xCD,       // Usage (Play/Pause)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-        0x0A, 0x83, 0x01, // Usage (AL Consumer Control Configuration)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-        0x09, 0xB5,       // Usage (Scan Next Track)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-        0x09, 0xB6,       // Usage (Scan Previous Track)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-
-        0x09, 0xEA,       // Usage (Volume Down)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-        0x09, 0xE9,       // Usage (Volume Up)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-        0x0A, 0x25, 0x02, // Usage (AC Forward)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-        0x0A, 0x24, 0x02, // Usage (AC Back)
-        0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
-        0xC0              // End Collection
+        // Report ID 2:
+        0x85, 0x02,                    // REPORT_ID (2)
+        0xa1, 0x02,                    //   COLLECTION (Logical)
+        0x05, 0x09,                    //     USAGE_PAGE (Button)
+        0x29, 0x02,                    //     USAGE_MAXIMUM (Button 2)
+        0x19, 0x01,                    //     USAGE_MINIMUM (Button 1)
+        0x95, 0x02,                    //     REPORT_COUNT (2)
+        0x75, 0x01,                    //     REPORT_SIZE (1)
+        0x25, 0x01,                    //     LOGICAL_MAXIMUM (1)
+        0x15, 0x00,                    //     LOGICAL_MINIMUM (0)
+        0x81, 0x02,                    //     Input (Data, Variable, Absolute)
+        0x95, 0x01,                    //     Report Count (1)
+        0x75, 0x06,                    //     Report Size (6)
+        0x81, 0x01,                    //     Input (Constant) for padding
+        0xc0,                          //   END_COLLECTION
+        0xc0                           // END_COLLECTION
     };
 
     memset(inp_rep_array, 0, sizeof(inp_rep_array));
