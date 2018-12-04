@@ -88,7 +88,7 @@
 #include "nrf_log_default_backends.h"
 
 
-#define DEVICE_NAME                     "nRF5_Mouse"                                /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "nRF5_joy"                                  /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "NordicSemiconductor"                       /**< Manufacturer. Will be passed to Device Information Service. */
 
 #define APP_BLE_OBSERVER_PRIO           3                                           /**< Application's BLE observer priority. You shouldn't need to modify this value. */
@@ -131,17 +131,16 @@
 #define RESERVED_RSSI_BYTE              0x80                                        /**< Reserved RSSI byte, used to maintain forwards and backwards compatibility. */
 #endif
 
-#define MOVEMENT_SPEED                  5                                           /**< Number of pixels by which the cursor is moved each time a button is pushed. */
 #define INPUT_REPORT_COUNT              2                                           /**< Number of input reports in this application. */
-#define INPUT_REP_BUTTONS_LEN           3                                           /**< Length of Mouse Input Report containing button data. */
-#define INPUT_REP_MOVEMENT_LEN          3                                           /**< Length of Mouse Input Report containing movement data. */
-#define INPUT_REP_MEDIA_PLAYER_LEN      1                                           /**< Length of Mouse Input Report containing media player data. */
-#define INPUT_REP_BUTTONS_INDEX         0                                           /**< Index of Mouse Input Report containing button data. */
-#define INPUT_REP_MOVEMENT_INDEX        1                                           /**< Index of Mouse Input Report containing movement data. */
-#define INPUT_REP_MPLAYER_INDEX         2                                           /**< Index of Mouse Input Report containing media player data. */
-#define INPUT_REP_REF_BUTTONS_ID        1                                           /**< Id of reference to Mouse Input Report containing button data. */
-#define INPUT_REP_REF_MOVEMENT_ID       2                                           /**< Id of reference to Mouse Input Report containing movement data. */
-#define INPUT_REP_REF_MPLAYER_ID        3                                           /**< Id of reference to Mouse Input Report containing media player data. */
+
+#define INPUT_REP_BUTTONS_LEN           3                                           /**< Length of Joystick Input Report containing button data. */
+#define INPUT_REP_AXES_LEN              3                                           /**< Length of Joystick Input Report containing axes data. */
+
+#define INPUT_REP_BUTTONS_INDEX         0                                           /**< Index of Joystick Input Report containing button data. */
+#define INPUT_REP_AXES_INDEX            1                                           /**< Index of Joystick Input Report containing axes data. */
+
+#define INPUT_REP_REF_BUTTONS_ID        1                                           /**< Id of reference to Joystick Input Report containing button data. */
+#define INPUT_REP_REF_AXES_ID           2                                           /**< Id of reference to Joystick Input Report containing axes data. */
 
 #define BASE_USB_HID_SPEC_VERSION       0x0101                                      /**< Version number of base USB HID Specification implemented by this application. */
 
@@ -166,8 +165,7 @@ BLE_BAS_DEF(m_bas);                                                             
 BLE_HIDS_DEF(m_hids,                                                                /**< HID service instance. */
              NRF_SDH_BLE_TOTAL_LINK_COUNT,
              INPUT_REP_BUTTONS_LEN,
-             INPUT_REP_MOVEMENT_LEN,
-             INPUT_REP_MEDIA_PLAYER_LEN);
+             INPUT_REP_AXES_LEN);
 NRF_BLE_GATT_DEF(m_gatt);                                                           /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                             /**< Context for the Queued Write module.*/
 BLE_ADVERTISING_DEF(m_advertising);                                                 /**< Advertising module instance. */
@@ -588,18 +586,9 @@ static void hids_init(void)
     p_input_report->sec.wr      = SEC_JUST_WORKS;
     p_input_report->sec.rd      = SEC_JUST_WORKS;
 
-    p_input_report                      = &inp_rep_array[INPUT_REP_MOVEMENT_INDEX];
-    p_input_report->max_len             = INPUT_REP_MOVEMENT_LEN;
-    p_input_report->rep_ref.report_id   = INPUT_REP_REF_MOVEMENT_ID;
-    p_input_report->rep_ref.report_type = BLE_HIDS_REP_TYPE_INPUT;
-
-    p_input_report->sec.cccd_wr = SEC_JUST_WORKS;
-    p_input_report->sec.wr      = SEC_JUST_WORKS;
-    p_input_report->sec.rd      = SEC_JUST_WORKS;
-
-    p_input_report                      = &inp_rep_array[INPUT_REP_MPLAYER_INDEX];
-    p_input_report->max_len             = INPUT_REP_MEDIA_PLAYER_LEN;
-    p_input_report->rep_ref.report_id   = INPUT_REP_REF_MPLAYER_ID;
+    p_input_report                      = &inp_rep_array[INPUT_REP_AXES_INDEX];
+    p_input_report->max_len             = INPUT_REP_AXES_LEN;
+    p_input_report->rep_ref.report_id   = INPUT_REP_REF_AXES_ID;
     p_input_report->rep_ref.report_type = BLE_HIDS_REP_TYPE_INPUT;
 
     p_input_report->sec.cccd_wr = SEC_JUST_WORKS;
@@ -613,7 +602,7 @@ static void hids_init(void)
     hids_init_obj.evt_handler                    = on_hids_evt;
     hids_init_obj.error_handler                  = service_error_handler;
     hids_init_obj.is_kb                          = false;
-    hids_init_obj.is_mouse                       = true;
+    hids_init_obj.is_mouse                       = true;    // TODO check if have to be removed
     hids_init_obj.inp_rep_count                  = INPUT_REPORT_COUNT;
     hids_init_obj.p_inp_rep_array                = inp_rep_array;
     hids_init_obj.outp_rep_count                 = 0;
@@ -1076,44 +1065,32 @@ static void scheduler_init(void)
 }
 
 
-/**@brief Function for sending a Mouse Movement.
+/**@brief Function for sending a Joystick Movement.
  *
  * @param[in]   x_delta   Horizontal movement.
  * @param[in]   y_delta   Vertical movement.
  */
-static void mouse_movement_send(int16_t x_delta, int16_t y_delta)
+static void joystick_movement_send(int8_t x_delta, int8_t y_delta)
 {
     ret_code_t err_code;
 
     if (m_in_boot_mode)
     {
-        x_delta = MIN(x_delta, 0x00ff);
-        y_delta = MIN(y_delta, 0x00ff);
-
         err_code = ble_hids_boot_mouse_inp_rep_send(&m_hids,
                                                     0x00,
-                                                    (int8_t)x_delta,
-                                                    (int8_t)y_delta,
+                                                    x_delta,
+                                                    y_delta,
                                                     0,
                                                     NULL,
                                                     m_conn_handle);
     }
     else
     {
-        uint8_t buffer[INPUT_REP_MOVEMENT_LEN];
-
-        APP_ERROR_CHECK_BOOL(INPUT_REP_MOVEMENT_LEN == 3);
-
-        x_delta = MIN(x_delta, 0x0fff);
-        y_delta = MIN(y_delta, 0x0fff);
-
-        buffer[0] = x_delta & 0x00ff;
-        buffer[1] = ((y_delta & 0x000f) << 4) | ((x_delta & 0x0f00) >> 8);
-        buffer[2] = (y_delta & 0x0ff0) >> 4;
+        uint8_t buffer[INPUT_REP_AXES_LEN];
 
         err_code = ble_hids_inp_rep_send(&m_hids,
-                                         INPUT_REP_MOVEMENT_INDEX,
-                                         INPUT_REP_MOVEMENT_LEN,
+                                         INPUT_REP_AXES_INDEX,
+                                         INPUT_REP_AXES_LEN,
                                          buffer,
                                          m_conn_handle);
     }
@@ -1167,28 +1144,28 @@ static void bsp_event_handler(bsp_event_t event)
         case BSP_EVENT_KEY_0:
             if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
             {
-                mouse_movement_send(-MOVEMENT_SPEED, 0);
+                joystick_movement_send(-127, 127);
             }
             break;
 
         case BSP_EVENT_KEY_1:
             if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
             {
-                mouse_movement_send(0, -MOVEMENT_SPEED);
+                joystick_movement_send(127, 127);
             }
             break;
 
         case BSP_EVENT_KEY_2:
             if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
             {
-                mouse_movement_send(MOVEMENT_SPEED, 0);
+                joystick_movement_send(-127, -127);
             }
             break;
 
         case BSP_EVENT_KEY_3:
             if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
             {
-                mouse_movement_send(0, MOVEMENT_SPEED);
+                joystick_movement_send(127, -127);
             }
             break;
 
