@@ -133,8 +133,8 @@
 
 #define INPUT_REPORT_COUNT              2                                           /**< Number of input reports in this application. */
 
-#define INPUT_REP_BUTTONS_LEN           3                                           /**< Length of Joystick Input Report containing button data. */
-#define INPUT_REP_AXES_LEN              3                                           /**< Length of Joystick Input Report containing axes data. */
+#define INPUT_REP_BUTTONS_LEN           2                                           /**< Length of Joystick Input Report containing button data. */
+#define INPUT_REP_AXES_LEN              2                                           /**< Length of Joystick Input Report containing axes data. */
 
 #define INPUT_REP_BUTTONS_INDEX         0                                           /**< Index of Joystick Input Report containing button data. */
 #define INPUT_REP_AXES_INDEX            1                                           /**< Index of Joystick Input Report containing axes data. */
@@ -543,22 +543,19 @@ static void hids_init(void)
         0xA1, 0x01, // Collection (Application)
 
         // Report ID 1:
-        0x85, 0x01,                    //  REPORT_ID (1)
+        0x85, 0x02,                    //  REPORT_ID (1)
         0xa1, 0x02,                    //    COLLECTION (Logical)
-        0x09, 0x32,                    //    USAGE (Z)
         0x09, 0x31,                    //    USAGE (Y)
         0x09, 0x30,                    //    USAGE (X)
-        0x15, 0x00,                    //    LOGICAL_MINIMUM (0)
-        0x26, 0xff, 0x00,              //    LOGICAL_MAXIMUM (255)
-        0x35, 0x00,                    //    PHYSICAL_MINIMUM (0)
-        0x46, 0xff, 0x00,              //    PHYSICAL_MAXIMUM (255)
+        0x15, 0x81,                    //    LOGICAL_MINIMUM (-127)
+        0x25, 0x7F,                    //    LOGICAL_MAXIMUM (127)
         0x75, 0x08,                    //    REPORT_SIZE (8)
-        0x95, 0x03,                    //    REPORT_COUNT (3)
+        0x95, 0x02,                    //    REPORT_COUNT (2)
         0x81, 0x02,                    //    INPUT (Data,Var,Abs)
         0xc0,                          //  END_COLLECTION
 
         // Report ID 2:
-        0x85, 0x02,                    // REPORT_ID (2)
+        0x85, 0x01,                    // REPORT_ID (2)
         0xa1, 0x02,                    //   COLLECTION (Logical)
         0x05, 0x09,                    //     USAGE_PAGE (Button)
         0x29, 0x02,                    //     USAGE_MAXIMUM (Button 2)
@@ -1086,7 +1083,11 @@ static void joystick_movement_send(int8_t x_delta, int8_t y_delta)
     }
     else
     {
+        NRF_LOG_INFO("0xAA");
         uint8_t buffer[INPUT_REP_AXES_LEN];
+
+        buffer[0] = x_delta;
+        buffer[1] = y_delta;
 
         err_code = ble_hids_inp_rep_send(&m_hids,
                                          INPUT_REP_AXES_INDEX,
