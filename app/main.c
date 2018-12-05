@@ -133,7 +133,7 @@
 
 #define INPUT_REPORT_COUNT              2                                           /**< Number of input reports in this application. */
 
-#define INPUT_REP_BUTTONS_LEN           2                                           /**< Length of Joystick Input Report containing button data. */
+#define INPUT_REP_BUTTONS_LEN           1                                           /**< Length of Joystick Input Report containing button data. */
 #define INPUT_REP_AXES_LEN              2                                           /**< Length of Joystick Input Report containing axes data. */
 
 #define INPUT_REP_BUTTONS_INDEX         0                                           /**< Index of Joystick Input Report containing button data. */
@@ -537,12 +537,11 @@ static void hids_init(void)
     static ble_hids_inp_rep_init_t inp_rep_array[INPUT_REPORT_COUNT];
     static uint8_t rep_map_data[] =
     {
+        // Report ID 1:
         0x05, 0x01,       // Usage Page (Generic Desktop)
         0x09, 0x04,       // USAGE (Joystick)
+        0xA1, 0x01,       // Collection (Application)
 
-        0xA1, 0x01, // Collection (Application)
-
-        // Report ID 1:
         0x85, 0x02,                    //  REPORT_ID (1)
         0xa1, 0x02,                    //    COLLECTION (Logical)
         0x09, 0x31,                    //    USAGE (Y)
@@ -554,22 +553,29 @@ static void hids_init(void)
         0x81, 0x02,                    //    INPUT (Data,Var,Abs)
         0xc0,                          //  END_COLLECTION
 
+        0xc0,                          // END_COLLECTION (Application)
+
         // Report ID 2:
+        0x05, 0x01,       // Usage Page (Generic Desktop)
+        0x09, 0x04,       // USAGE (Joystick)
+        0xA1, 0x01,       // Collection (Application)
+
         0x85, 0x01,                    // REPORT_ID (2)
         0xa1, 0x02,                    //   COLLECTION (Logical)
         0x05, 0x09,                    //     USAGE_PAGE (Button)
-        0x29, 0x02,                    //     USAGE_MAXIMUM (Button 2)
         0x19, 0x01,                    //     USAGE_MINIMUM (Button 1)
+        0x29, 0x02,                    //     USAGE_MAXIMUM (Button 2)
         0x95, 0x02,                    //     REPORT_COUNT (2)
         0x75, 0x01,                    //     REPORT_SIZE (1)
         0x25, 0x01,                    //     LOGICAL_MAXIMUM (1)
         0x15, 0x00,                    //     LOGICAL_MINIMUM (0)
         0x81, 0x02,                    //     Input (Data, Variable, Absolute)
-        0x95, 0x01,                    //     Report Count (1)
-        0x75, 0x06,                    //     Report Size (6)
-        0x81, 0x01,                    //     Input (Constant) for padding
+        0x95, 0x01,                    //     Report Count (1) <- padding
+        0x75, 0x06,                    //     Report Size (6)  <- padding
+        0x81, 0x01,                    //     Input (Constant) <- padding
         0xc0,                          //   END_COLLECTION
-        0xc0                           // END_COLLECTION
+
+        0xc0                           // END_COLLECTION (Application)
     };
 
     memset(inp_rep_array, 0, sizeof(inp_rep_array));
@@ -599,7 +605,7 @@ static void hids_init(void)
     hids_init_obj.evt_handler                    = on_hids_evt;
     hids_init_obj.error_handler                  = service_error_handler;
     hids_init_obj.is_kb                          = false;
-    hids_init_obj.is_mouse                       = true;    // TODO check if have to be removed
+    hids_init_obj.is_mouse                       = false;    // TODO check if have to be removed
     hids_init_obj.inp_rep_count                  = INPUT_REPORT_COUNT;
     hids_init_obj.p_inp_rep_array                = inp_rep_array;
     hids_init_obj.outp_rep_count                 = 0;
@@ -1094,6 +1100,15 @@ static void joystick_movement_send(int8_t x_delta, int8_t y_delta)
                                          INPUT_REP_AXES_LEN,
                                          buffer,
                                          m_conn_handle);
+
+        buffer[0] = (x_delta & y_delta & 0x03);
+
+        err_code |= ble_hids_inp_rep_send(&m_hids,
+                                         INPUT_REP_BUTTONS_INDEX,
+                                         INPUT_REP_BUTTONS_LEN,
+                                         buffer,
+                                         m_conn_handle);
+
     }
 
     if ((err_code != NRF_SUCCESS) &&
