@@ -1277,17 +1277,17 @@ static void saadc_callback(nrf_drv_saadc_evt_t const * p_event)
         p_event->data.done.p_buffer[0] = MIN(p_event->data.done.p_buffer[0], 127);
         p_event->data.done.p_buffer[1] = MIN(p_event->data.done.p_buffer[1], 127);
 
-        int8_t joy_x_value = p_event->data.done.p_buffer[0];
-        int8_t joy_y_value = p_event->data.done.p_buffer[1];
+        // int8_t joy_x_value = p_event->data.done.p_buffer[0];
+        // int8_t joy_y_value = p_event->data.done.p_buffer[1];
 
         // some debugs
         //joy_y_value = joy_y_value * (-1);  //inverse
         //printf("%d, %d\r\n", joy_x_value, joy_y_value);
 
-        if (!err_code && m_conn_handle != BLE_CONN_HANDLE_INVALID)
-        {
-            joystick_movement_send(joy_x_value, joy_y_value);
-        }
+        // if (!err_code && m_conn_handle != BLE_CONN_HANDLE_INVALID)
+        // {
+        //     joystick_movement_send(joy_x_value, joy_y_value);
+        // }
 
     }
 }
